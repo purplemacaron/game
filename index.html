@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>긴급 조달 작전</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{--navy:#0b2a5b;--blue:#1d6fe0;--sky:#e8f1ff;--ok:#18a058;--bad:#e5484d;--yellow:#ffc53d}
+html,body{height:100%}
+body{font-family:"Malgun Gothic","Apple SD Gothic Neo",sans-serif;background:linear-gradient(160deg,#0b2a5b,#1d6fe0);color:#1a2233;display:flex;justify-content:center;align-items:center;user-select:none;-webkit-user-select:none}
+#app{width:100%;max-width:520px;height:100%;max-height:900px;background:#f5f8ff;position:relative;overflow:hidden;display:flex;flex-direction:column}
+@media(min-width:560px){#app{height:94%;border-radius:24px;box-shadow:0 20px 60px rgba(0,0,0,.35)}}
+.screen{display:none;flex:1;flex-direction:column;padding:24px;overflow-y:auto}
+.screen.on{display:flex}
+.btn{border:0;border-radius:16px;padding:16px;font-size:18px;font-weight:700;font-family:inherit;background:var(--blue);color:#fff;cursor:pointer;box-shadow:0 4px 0 #1450a8;transition:transform .08s}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 #1450a8}
+
+/* 타이틀 */
+#title{justify-content:center;align-items:center;text-align:center;background:linear-gradient(180deg,#e8f1ff,#f5f8ff)}
+#title .logo{font-size:84px;animation:bob 1.6s ease-in-out infinite}
+#title h1{font-size:38px;color:var(--navy);margin:12px 0 8px}
+#title p{font-size:16px;color:#4a5878;line-height:1.6;margin-bottom:32px}
+#title .btn{width:80%;font-size:20px}
+@keyframes bob{50%{transform:translateY(-10px)}}
+
+/* 튜토리얼 */
+#tutorial h2{font-size:24px;color:var(--navy);margin-bottom:6px}
+#tutorial .sub{font-size:15px;color:#4a5878;margin-bottom:16px;line-height:1.5}
+.guide{display:flex;gap:12px;align-items:center;background:#fff;border-radius:14px;padding:12px 14px;margin-bottom:10px;box-shadow:0 2px 6px rgba(11,42,91,.08)}
+.guide .ic{font-size:30px}
+.guide b{display:block;font-size:16px;color:var(--navy)}
+.guide span{font-size:14px;color:#4a5878}
+#tutorial .btn{margin-top:auto}
+
+/* 플레이 */
+#play{padding:16px}
+.hud{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.hud .stage{font-size:14px;font-weight:700;color:var(--navy)}
+.hud .score{font-size:22px;font-weight:800;color:var(--blue)}
+.bar{height:12px;background:#d5e1f5;border-radius:6px;overflow:hidden}
+.bar i{display:block;height:100%;width:100%;background:var(--blue);border-radius:6px}
+.timeTxt{font-size:13px;color:#4a5878;text-align:right;margin:4px 0 10px}
+#combo{height:24px;text-align:center;font-weight:800;color:#e8590c;font-size:16px}
+.card{background:#fff;border-radius:20px;padding:20px;box-shadow:0 6px 18px rgba(11,42,91,.12);min-height:170px;display:flex;flex-direction:column}
+.card.in{animation:pop .25s ease-out}
+@keyframes pop{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
+.card .who{font-size:17px;font-weight:700;color:var(--navy);margin-bottom:10px}
+.card .text{font-size:19px;line-height:1.5;flex:1}
+.card .bar{height:6px;margin-top:14px}
+.card .bar i{background:var(--yellow)}
+#fb{min-height:64px;margin:10px 0;padding:10px 14px;border-radius:12px;font-size:15px;line-height:1.45;visibility:hidden}
+#fb.ok{visibility:visible;background:#e3f6ec;color:#0d6b3a;font-weight:700}
+#fb.bad{visibility:visible;background:#fdeaea;color:#a12a2e}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:auto}
+.choice{border:2px solid #cfdcf3;background:#fff;border-radius:16px;padding:12px 6px;font-family:inherit;cursor:pointer;text-align:center;transition:transform .08s}
+.choice:active{transform:scale(.96)}
+.choice .ic{font-size:28px;display:block}
+.choice b{font-size:15px;color:var(--navy);display:block;margin:2px 0}
+.choice span{font-size:12px;color:#6b7a99}
+.choice.right{border-color:var(--ok);background:#e3f6ec}
+.choice.wrong{border-color:var(--bad);background:#fdeaea}
+
+/* 단계 완료 오버레이 */
+#overlay{display:none;position:absolute;inset:0;background:rgba(11,42,91,.85);color:#fff;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:24px}
+#overlay.on{display:flex}
+#overlay h2{font-size:30px;margin-bottom:10px}
+#overlay p{font-size:17px;line-height:1.6;margin-bottom:26px}
+#overlay .btn{width:70%;background:var(--yellow);color:var(--navy);box-shadow:0 4px 0 #c99a1c}
+
+/* 결과 */
+#result{align-items:center;text-align:center;justify-content:center}
+#result .badge{font-size:80px}
+#result h2{font-size:26px;color:var(--navy);margin:6px 0}
+#result .big{font-size:46px;font-weight:800;color:var(--blue);margin:6px 0 14px}
+.stats{display:flex;gap:10px;width:100%;margin-bottom:16px}
+.stats div{flex:1;background:#fff;border-radius:14px;padding:12px 4px;box-shadow:0 2px 6px rgba(11,42,91,.08)}
+.stats b{display:block;font-size:20px;color:var(--navy)}
+.stats span{font-size:13px;color:#6b7a99}
+#result .msg{font-size:15px;color:#4a5878;line-height:1.6;margin-bottom:20px}
+#result .btn{width:80%}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <section id="title" class="screen on">
+    <div class="logo">🚚</div>
+    <h1>긴급 조달 작전</h1>
+    <p>나는 오늘부터 조달관!<br>우리 동네에 필요한 물건을<br>가장 알맞은 방법으로 보내 주세요.</p>
+    <button class="btn" id="btnStart">시작하기</button>
+  </section>
+
+  <section id="tutorial" class="screen">
+    <h2>이렇게 해요</h2>
+    <p class="sub">요청 카드를 읽고, 알맞은 조달 방법 버튼을 누르세요. 빨리 맞힐수록, 연속으로 맞힐수록 점수가 커져요.</p>
+    <div id="guideList"></div>
+    <button class="btn" id="btnPlay">작전 개시!</button>
+  </section>
+
+  <section id="play" class="screen">
+    <div class="hud"><span class="stage" id="stageName"></span><span class="score" id="score">0</span></div>
+    <div class="bar"><i id="timeBar"></i></div>
+    <div class="timeTxt">남은 시간 <b id="timeNum">60</b>초</div>
+    <div id="combo"></div>
+    <div class="card" id="card">
+      <div class="who" id="who"></div>
+      <div class="text" id="text"></div>
+      <div class="bar"><i id="cardBar"></i></div>
+    </div>
+    <div id="fb"></div>
+    <div class="choices" id="choices"></div>
+  </section>
+
+  <section id="result" class="screen">
+    <div class="badge" id="badge"></div>
+    <h2 id="grade"></h2>
+    <div class="big" id="finalScore"></div>
+    <div class="stats">
+      <div><b id="stCorrect"></b><span>맞힌 요청</span></div>
+      <div><b id="stRate"></b><span>정답률</span></div>
+      <div><b id="stCombo"></b><span>최고 콤보</span></div>
+    </div>
+    <p class="msg">조달청은 나라에 필요한 물건과 공사를<br>공정하고 알뜰하게 마련하는 일을 해요.</p>
+    <button class="btn" id="btnRetry">다시 도전</button>
+  </section>
+
+  <div id="overlay">
+    <h2 id="ovTitle"></h2>
+    <p id="ovText"></p>
+    <button class="btn" id="btnNext">다음 단계로</button>
+  </div>
+</div>
+
+<script>
+/* ===== 1. 데이터 (여기만 고치면 내용이 바뀝니다) ===== */
+const TYPES = {
+  mall:  {icon:'🛒', name:'종합쇼핑몰 구매', desc:'규격이 정해진 일반 물품'},
+  bid:   {icon:'📢', name:'입찰 공고',       desc:'큰 공사나 맞춤 사업'},
+  inno:  {icon:'💡', name:'혁신제품 구매',   desc:'신기술로 문제 해결'},
+  stock: {icon:'📦', name:'비축물자 방출',   desc:'원자재가 부족할 때'}
+};
+
+const CARDS = [
+  {who:'🏫 초등학교', text:'새 학기 교실에 놓을 책상과 의자 30세트가 필요해요.', a:'mall', why:'규격이 정해진 물품은 종합쇼핑몰에서 바로 고를 수 있어요.'},
+  {who:'🏢 주민센터', text:'민원실에서 쓸 복사 용지 100상자를 주문하고 싶어요.', a:'mall', why:'자주 쓰는 사무용품은 종합쇼핑몰에 등록되어 있어요.'},
+  {who:'🚒 소방서', text:'대원들이 쓸 사무용 컴퓨터 20대가 필요합니다.', a:'mall', why:'컴퓨터처럼 규격이 정해진 제품은 종합쇼핑몰에서 사요.'},
+  {who:'🏥 보건소', text:'대기실에 둘 공기청정기 5대를 사려고 해요.', a:'mall', why:'가전제품은 종합쇼핑몰에서 비교하고 살 수 있어요.'},
+  {who:'📚 도서관', text:'열람실 책장 40개를 새로 들이려고 해요.', a:'mall', why:'가구류는 종합쇼핑몰에 다양하게 등록되어 있어요.'},
+  {who:'🏫 중학교', text:'교실마다 달 냉난방기 12대가 필요해요.', a:'mall', why:'규격 제품인 냉난방기는 종합쇼핑몰에서 구매해요.'},
+
+  {who:'🏙️ 시청', text:'낡은 다리를 허물고 새 다리를 지어야 합니다.', a:'bid', why:'큰 공사는 입찰 공고를 내서 공정하게 업체를 뽑아요.'},
+  {who:'🏫 교육청', text:'새 초등학교 건물을 지을 건설 회사를 찾아요.', a:'bid', why:'건물 공사는 여러 회사가 경쟁하는 입찰로 정해요.'},
+  {who:'🏞️ 군청', text:'마을 전체 상수도관을 새로 까는 공사를 하려고 해요.', a:'bid', why:'규모가 큰 공사는 입찰 공고가 필요해요.'},
+  {who:'🏛️ 박물관', text:'우리 박물관만의 전시 안내 앱을 새로 개발해 주세요.', a:'bid', why:'맞춤으로 만들어야 하는 사업은 입찰로 업체를 정해요.'},
+  {who:'🚇 도시철도', text:'지하철역에 엘리베이터를 새로 설치하는 공사를 해요.', a:'bid', why:'설치 공사는 입찰 공고로 업체를 뽑아요.'},
+  {who:'🏟️ 체육회', text:'시민 체육관을 새로 짓고 싶어요.', a:'bid', why:'체육관 건설 같은 큰 공사는 입찰로 진행해요.'},
+
+  {who:'🚒 소방서', text:'불길 속을 대신 들어가 살펴볼 최신 탐색 로봇을 써 보고 싶어요.', a:'inno', why:'새로운 기술 제품은 혁신제품으로 먼저 써 볼 수 있어요.'},
+  {who:'🏥 병원', text:'AI가 엑스레이를 읽어 주는 새 기술을 시험해 보고 싶어요.', a:'inno', why:'신기술 제품은 혁신제품 구매로 공공기관이 먼저 사용해요.'},
+  {who:'🌳 구청', text:'쓰레기가 차면 스스로 압축하는 태양광 쓰레기통이 있다던데요?', a:'inno', why:'새로운 아이디어 제품은 혁신제품으로 구매해요.'},
+  {who:'🏫 초등학교', text:'통학로에 아이를 감지해 알려 주는 스마트 횡단보도를 놓고 싶어요.', a:'inno', why:'신기술로 문제를 푸는 제품은 혁신제품이에요.'},
+  {who:'🌊 해양경찰', text:'바다 쓰레기를 스스로 모으는 무인 청소 드론을 써 보려 해요.', a:'inno', why:'처음 나온 신기술 제품은 혁신제품으로 써 봐요.'},
+  {who:'👵 복지관', text:'어르신 안부를 살피는 AI 돌봄 로봇을 시범으로 들이고 싶어요.', a:'inno', why:'시범으로 써 보는 신기술은 혁신제품 구매가 알맞아요.'},
+
+  {who:'🏭 중소기업', text:'알루미늄 값이 갑자기 올라 공장이 멈출 것 같아요!', a:'stock', why:'나라가 모아 둔 비축물자를 풀어 기업을 도와요.'},
+  {who:'🚛 화물 기사', text:'요소수가 동나서 트럭을 운행할 수 없어요!', a:'stock', why:'부족해진 원자재는 비축물자를 방출해 해결해요.'},
+  {who:'🔌 전선 공장', text:'구리 수입이 막혀서 전선을 만들 수가 없어요.', a:'stock', why:'구리 같은 금속은 나라가 미리 비축해 둬요.'},
+  {who:'🔋 배터리 공장', text:'니켈을 구하지 못해 생산이 중단될 위기예요.', a:'stock', why:'니켈도 비축물자예요. 위기 때 방출해요.'},
+  {who:'🏭 도금 공장', text:'아연 값이 치솟아 중소기업들이 어려워하고 있어요.', a:'stock', why:'원자재 값이 불안할 때 비축물자를 풀어요.'},
+  {who:'⚙️ 부품 공장', text:'해외 사정으로 주석 수입이 끊겼어요. 도와주세요!', a:'stock', why:'수입이 끊긴 원자재는 비축물자로 버텨요.'}
+];
+
+const STAGES = [
+  {name:'1단계 · 새내기 조달관', time:60, limit:10},
+  {name:'2단계 · 바쁜 조달관',   time:60, limit:7},
+  {name:'3단계 · 긴급 상황실',   time:60, limit:5}
+];
+
+const GRADES = [
+  {min:5000, badge:'🏆', name:'전설의 조달관'},
+  {min:3000, badge:'🥇', name:'수석 조달관'},
+  {min:1500, badge:'🥈', name:'믿음직한 조달관'},
+  {min:0,    badge:'🥉', name:'새내기 조달관'}
+];
+
+/* ===== 2. 공통 도구 ===== */
+const $ = id => document.getElementById(id);
+function show(id){
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('on'));
+  $(id).classList.add('on');
+}
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+/* 효과음 (파일 없이 코드로 생성) */
+let actx = null;
+function beep(freq, dur, type, delay){
+  if(!actx) return;
+  const t = actx.currentTime + (delay||0);
+  const o = actx.createOscillator(), g = actx.createGain();
+  o.type = type || 'sine';
+  o.frequency.value = freq;
+  g.gain.setValueAtTime(0.15, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(g); g.connect(actx.destination);
+  o.start(t); o.stop(t + dur);
+}
+const sndOk  = () => { beep(660,.12); beep(880,.15,'sine',.1); };
+const sndBad = () => beep(180,.3,'sawtooth');
+const sndEnd = () => { beep(523,.15); beep(659,.15,'sine',.15); beep(784,.3,'sine',.3); };
+
+/* ===== 3. 게임 상태 ===== */
+let S = {};
+let timer = null;
+let deck = [];
+
+function newGame(){
+  S = {stage:0, score:0, combo:0, maxCombo:0, correct:0, total:0,
+       timeLeft:0, cardLeft:0, cur:null, locked:true};
+  deck = [];
+  startStage(0);
+}
+
+function startStage(n){
+  S.stage = n;
+  S.timeLeft = STAGES[n].time;
+  $('stageName').textContent = STAGES[n].name;
+  $('overlay').classList.remove('on');
+  show('play');
+  nextCard();
+  clearInterval(timer);
+  timer = setInterval(tick, 100);
+}
+
+function nextCard(){
+  if(deck.length === 0) deck = shuffle(CARDS);
+  S.cur = deck.pop();
+  S.cardLeft = STAGES[S.stage].limit;
+  $('who').textContent = S.cur.who;
+  $('text').textContent = S.cur.text;
+  $('fb').className = '';
+  $('fb').textContent = '';
+  document.querySelectorAll('.choice').forEach(b => b.classList.remove('right','wrong'));
+  const c = $('card');
+  c.classList.remove('in'); void c.offsetWidth; c.classList.add('in');
+  S.locked = false;
+  render();
+}
+
+function tick(){
+  if(S.locked) return;           // 해설을 읽는 동안은 시간이 멈춤
+  S.timeLeft -= 0.1;
+  S.cardLeft -= 0.1;
+  if(S.timeLeft <= 0){ S.timeLeft = 0; render(); endStage(); return; }
+  if(S.cardLeft <= 0){ answer(null); return; }
+  render();
+}
+
+function answer(type){
+  if(S.locked) return;
+  S.locked = true;
+  S.total++;
+  const right = S.cur.a;
+  const fb = $('fb');
+  document.querySelector('.choice[data-t="'+right+'"]').classList.add('right');
+
+  if(type === right){
+    S.correct++;
+    S.combo++;
+    S.maxCombo = Math.max(S.maxCombo, S.combo);
+    const speed = Math.round(50 * S.cardLeft / STAGES[S.stage].limit); // 빨리 맞히면 보너스
+    const comboBonus = Math.min(S.combo - 1, 5) * 20;
+    const gain = 100 + speed + comboBonus;
+    S.score += gain;
+    fb.className = 'ok';
+    fb.textContent = '정답! +' + gain + '점';
+    sndOk();
+    render();
+    setTimeout(afterAnswer, 600);
+  } else {
+    S.combo = 0;
+    S.score = Math.max(0, S.score - 30);
+    if(type) document.querySelector('.choice[data-t="'+type+'"]').classList.add('wrong');
+    fb.className = 'bad';
+    fb.textContent = (type ? '아쉬워요! ' : '시간 초과! ') + S.cur.why;
+    sndBad();
+    render();
+    setTimeout(afterAnswer, 2200);
+  }
+}
+
+function afterAnswer(){
+  if(!$('play').classList.contains('on')) return;
+  nextCard();
+}
+
+function endStage(){
+  S.locked = true;
+  clearInterval(timer);
+  sndEnd();
+  if(S.stage < STAGES.length - 1){
+    $('ovTitle').textContent = (S.stage + 1) + '단계 완료!';
+    $('ovText').innerHTML = '현재 점수 <b>' + S.score + '점</b><br>다음 단계는 요청이 더 빨리 도착해요.';
+    $('overlay').classList.add('on');
+  } else {
+    showResult();
+  }
+}
+
+function showResult(){
+  const g = GRADES.find(x => S.score >= x.min);
+  $('badge').textContent = g.badge;
+  $('grade').textContent = g.name;
+  $('finalScore').textContent = S.score + '점';
+  $('stCorrect').textContent = S.correct + '건';
+  $('stRate').textContent = (S.total ? Math.round(S.correct / S.total * 100) : 0) + '%';
+  $('stCombo').textContent = S.maxCombo;
+  show('result');
+}
+
+function render(){
+  const st = STAGES[S.stage];
+  $('score').textContent = S.score;
+  $('timeNum').textContent = Math.ceil(S.timeLeft);
+  $('timeBar').style.width = (S.timeLeft / st.time * 100) + '%';
+  $('cardBar').style.width = Math.max(0, S.cardLeft / st.limit * 100) + '%';
+  $('combo').textContent = S.combo >= 2 ? '🔥 ' + S.combo + '연속 정답!' : '';
+}
+
+/* ===== 4. 화면 만들기와 버튼 연결 ===== */
+Object.keys(TYPES).forEach(k => {
+  const t = TYPES[k];
+  const g = document.createElement('div');
+  g.className = 'guide';
+  g.innerHTML = '<span class="ic">'+t.icon+'</span><div><b>'+t.name+'</b><span>'+t.desc+'</span></div>';
+  $('guideList').appendChild(g);
+
+  const b = document.createElement('button');
+  b.className = 'choice';
+  b.dataset.t = k;
+  b.innerHTML = '<span class="ic">'+t.icon+'</span><b>'+t.name+'</b><span>'+t.desc+'</span>';
+  b.addEventListener('click', () => answer(k));
+  $('choices').appendChild(b);
+});
+
+$('btnStart').addEventListener('click', () => {
+  if(!actx){
+    try{ actx = new (window.AudioContext || window.webkitAudioContext)(); }catch(e){ actx = null; }
+  }
+  show('tutorial');
+});
+$('btnPlay').addEventListener('click', newGame);
+$('btnNext').addEventListener('click', () => startStage(S.stage + 1));
+$('btnRetry').addEventListener('click', newGame);
+
+/* PC에서는 숫자키 1~4로도 선택 가능 */
+document.addEventListener('keydown', e => {
+  const i = ['1','2','3','4'].indexOf(e.key);
+  if(i >= 0 && $('play').classList.contains('on')) answer(Object.keys(TYPES)[i]);
+});
+</script>
+</body>
+</html>
